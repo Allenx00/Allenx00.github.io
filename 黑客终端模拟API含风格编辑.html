@@ -1,0 +1,2476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoSystem 高级监控终端 v3.6 - AI风格定制版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #00f3ff;
+            --primary-dark: #0066ff;
+            --secondary: #ff00ff;
+            --ai-color: #00ff9d;
+            --dark-bg: #0a0a16;
+            --darker-bg: #050510;
+            --card-bg: rgba(10, 15, 30, 0.8);
+            --border-color: rgba(0, 243, 255, 0.2);
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0ff;
+            --success: #00ff9d;
+            --warning: #ffcc00;
+            --danger: #ff4757;
+            --user-msg-bg: rgba(0, 102, 255, 0.2);
+            --ai-msg-bg: rgba(0, 255, 157, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto Mono', monospace;
+        }
+        
+        body {
+            background-color: var(--darker-bg);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 102, 255, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 255, 0.1) 0%, transparent 20%);
+        }
+        
+        /* 网格背景 */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            width: 280px;
+            background-color: rgba(5, 10, 20, 0.9);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: 0 0 30px rgba(0, 102, 255, 0.2);
+        }
+        
+        .logo-area {
+            padding: 25px 20px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.7);
+        }
+        
+        .logo i {
+            color: var(--secondary);
+        }
+        
+        .version {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+        
+        .nav-menu {
+            flex: 1;
+            padding: 30px 0;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 18px 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            gap: 15px;
+            color: var(--text-secondary);
+        }
+        
+        .nav-item:hover {
+            background-color: rgba(0, 102, 255, 0.1);
+            color: var(--text-primary);
+        }
+        
+        .nav-item.active {
+            background-color: rgba(0, 102, 255, 0.15);
+            border-left-color: var(--primary);
+            color: var(--text-primary);
+        }
+        
+        .nav-item.ai-item {
+            position: relative;
+        }
+        
+        .nav-item.ai-item::after {
+            content: "NEW";
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--ai-color);
+            color: var(--darker-bg);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .nav-item i {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .nav-text {
+            font-size: 1.1rem;
+        }
+        
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .page-title i {
+            color: var(--secondary);
+        }
+        
+        .time-display {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        .content-area {
+            flex: 1;
+            overflow: auto;
+            padding-right: 10px;
+        }
+        
+        /* 隐藏滚动条但保持功能 */
+        .content-area::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .content-area::-webkit-scrollbar-track {
+            background: rgba(0, 102, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        .content-area::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+        
+        /* 页面样式 */
+        .page {
+            display: none;
+            animation: fadeIn 0.5s;
+            height: 100%;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* AI助手页面 */
+        .ai-assistant-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .ai-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--ai-color), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: var(--darker-bg);
+        }
+        
+        .ai-info {
+            flex: 1;
+        }
+        
+        .ai-name {
+            font-size: 1.5rem;
+            color: var(--ai-color);
+            margin-bottom: 5px;
+        }
+        
+        .ai-status {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .ai-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--success);
+            animation: pulse 2s infinite;
+        }
+        
+        .ai-chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 150px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: var(--card-bg);
+        }
+        
+        .ai-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .ai-message {
+            max-width: 80%;
+            padding: 15px;
+            border-radius: 12px;
+            line-height: 1.5;
+            position: relative;
+        }
+        
+        .ai-message.user {
+            align-self: flex-end;
+            background-color: var(--user-msg-bg);
+            border-bottom-right-radius: 4px;
+        }
+        
+        .ai-message.assistant {
+            align-self: flex-start;
+            background-color: var(--ai-msg-bg);
+            border-bottom-left-radius: 4px;
+            border-left: 3px solid var(--ai-color);
+        }
+        
+        .ai-message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .ai-message.user .ai-message-header {
+            color: var(--primary);
+        }
+        
+        .ai-message.assistant .ai-message-header {
+            color: var(--ai-color);
+        }
+        
+        .ai-message-content {
+            font-size: 1rem;
+        }
+        
+        .ai-chat-input {
+            border-top: 1px solid var(--border-color);
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        .ai-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .ai-input-field {
+            flex: 1;
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            resize: none;
+            min-height: 60px;
+            max-height: 120px;
+        }
+        
+        .ai-input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .ai-send-btn {
+            padding: 15px 25px;
+            background: linear-gradient(90deg, var(--ai-color), #00cc80);
+            border: none;
+            border-radius: 8px;
+            color: var(--darker-bg);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            align-self: flex-end;
+        }
+        
+        .ai-send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 157, 0.4);
+        }
+        
+        /* AI风格定制页面样式 - 重新设计部分 */
+        .style-customization-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 20px;
+        }
+        
+        .style-presets {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .style-preset {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-height: 140px;
+            justify-content: center;
+        }
+        
+        .style-preset:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 16px rgba(0, 243, 255, 0.15);
+        }
+        
+        .style-preset.active {
+            border-color: var(--ai-color);
+            background-color: rgba(0, 255, 157, 0.1);
+            box-shadow: 0 8px 16px rgba(0, 255, 157, 0.2);
+        }
+        
+        .style-preset-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--ai-color);
+        }
+        
+        .style-preset-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+        
+        .style-preset-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        
+        .style-customization {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            height: calc(100vh - 300px);
+            overflow: hidden;
+        }
+        
+        .style-settings-panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .style-preview-panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .style-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .style-section-title {
+            font-size: 1.2rem;
+            color: var(--primary);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .style-section-title i {
+            color: var(--secondary);
+            font-size: 1.1rem;
+        }
+        
+        /* 重新设计的滑块样式 */
+        .style-slider-group {
+            margin-bottom: 22px;
+            padding: 12px 15px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s;
+        }
+        
+        .style-slider-group:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-color: rgba(0, 243, 255, 0.1);
+        }
+        
+        .style-slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .style-slider-name {
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .style-slider-value {
+            color: var(--ai-color);
+            font-weight: 600;
+            font-size: 1.1rem;
+            min-width: 50px;
+            text-align: right;
+        }
+        
+        .style-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .style-slider {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 4px;
+            outline: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .style-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--ai-color);
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(0, 255, 157, 0.6);
+            border: 2px solid var(--darker-bg);
+            transition: all 0.2s;
+        }
+        
+        .style-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0, 255, 157, 0.8);
+        }
+        
+        .style-slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--ai-color);
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(0, 255, 157, 0.6);
+            border: 2px solid var(--darker-bg);
+        }
+        
+        /* 重新设计的复选框样式 */
+        .style-checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 5px;
+        }
+        
+        .style-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .style-checkbox:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-color: rgba(0, 102, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .style-checkbox input {
+            display: none;
+        }
+        
+        .style-checkbox .checkbox-custom {
+            width: 22px;
+            height: 22px;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.08);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .style-checkbox input:checked + .checkbox-custom {
+            background-color: var(--ai-color);
+            border-color: var(--ai-color);
+            box-shadow: 0 0 10px rgba(0, 255, 157, 0.4);
+        }
+        
+        .style-checkbox input:checked + .checkbox-custom::after {
+            content: "✓";
+            color: var(--darker-bg);
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .style-checkbox-label {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        
+        /* 重新设计的输入框样式 */
+        .style-input-group {
+            margin-bottom: 20px;
+        }
+        
+        .style-input-label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        
+        .style-input {
+            width: 100%;
+            padding: 14px 16px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .style-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+        
+        .style-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            resize: vertical;
+            font-family: 'Segoe UI', 'Roboto Mono', monospace;
+            transition: all 0.2s;
+        }
+        
+        .style-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+        
+        .style-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .style-btn {
+            padding: 14px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 160px;
+        }
+        
+        .style-btn-primary {
+            background: linear-gradient(90deg, var(--ai-color), #00cc80);
+            color: var(--darker-bg);
+        }
+        
+        .style-btn-secondary {
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+        
+        .style-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 255, 157, 0.3);
+        }
+        
+        .style-btn-secondary:hover {
+            box-shadow: 0 8px 20px rgba(0, 243, 255, 0.3);
+        }
+        
+        .style-preview-title {
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .style-preview-content {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            border-left: 4px solid var(--ai-color);
+            flex: 1;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+        }
+        
+        .style-preview-ai-name {
+            font-size: 1.1rem;
+            color: var(--ai-color);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .style-preview-style-name {
+            font-size: 1rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .style-preview-style-name i {
+            color: var(--secondary);
+        }
+        
+        .style-preview-example {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+        
+        .style-preview-example-title {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        
+        .style-preview-example-content {
+            color: var(--text-secondary);
+            font-style: italic;
+            line-height: 1.5;
+            padding: 12px;
+            background-color: rgba(0, 0, 0, 0.15);
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        /* 参数说明标签 */
+        .param-description {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            line-height: 1.4;
+            padding-left: 5px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .style-customization {
+                grid-template-columns: 1fr;
+                height: auto;
+                overflow: visible;
+            }
+            
+            .style-presets {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+            
+            .style-checkbox-group {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+        
+        @media (max-width: 1024px) {
+            .style-presets {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            }
+            
+            .style-checkbox-group {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .style-presets {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            }
+            
+            .style-checkbox-group {
+                grid-template-columns: 1fr;
+            }
+            
+            .style-btn {
+                min-width: 140px;
+                padding: 12px 24px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+            
+            .logo-area .logo-text, .nav-text {
+                display: none;
+            }
+            
+            .logo-area {
+                padding: 20px 10px;
+            }
+            
+            .nav-item {
+                justify-content: center;
+                padding: 20px 10px;
+            }
+            
+            .style-presets {
+                grid-template-columns: 1fr;
+            }
+            
+            .style-actions {
+                flex-direction: column;
+            }
+            
+            .style-btn {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .style-customization {
+                gap: 20px;
+            }
+            
+            .style-settings-panel, .style-preview-panel {
+                padding: 20px;
+            }
+        }
+        
+        /* 加载动画 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 243, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 连接状态指示器 */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--success);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* 通知 */
+        .notification {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 25px;
+            background-color: var(--card-bg);
+            border-left: 4px solid var(--primary);
+            border-radius: 6px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+            max-width: 400px;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        
+        /* 命令提示 */
+        .command-hint {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+    
+    <div class="container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="logo-area">
+                <div class="logo">
+                    <i class="fas fa-server"></i>
+                    <span class="logo-text">NeoSystem</span>
+                </div>
+                <div class="version">v3.6 - AI风格定制版</div>
+            </div>
+            
+            <div class="nav-menu">
+                <div class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="nav-text">仪表板</span>
+                </div>
+                <div class="nav-item ai-item" data-page="ai">
+                    <i class="fas fa-robot"></i>
+                    <span class="nav-text">AI助手</span>
+                </div>
+                <div class="nav-item" data-page="style">
+                    <i class="fas fa-palette"></i>
+                    <span class="nav-text">AI风格定制</span>
+                </div>
+                <div class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span class="nav-text">设置</span>
+                </div>
+            </div>
+            
+            <div class="system-status-sidebar">
+                <div class="status-item">
+                    <span class="status-label">系统状态</span>
+                    <span class="status-value" id="sidebar-status">正常</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">在线时间</span>
+                    <span class="status-value" id="uptime">0:00:00</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">AI风格</span>
+                    <span class="status-value" id="ai-style-name">专业型</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <div class="top-bar">
+                <div class="page-title">
+                    <i class="fas fa-chart-line"></i>
+                    <span id="current-page-title">系统仪表板</span>
+                </div>
+                
+                <div class="connection-status">
+                    <div class="status-dot"></div>
+                    <span>系统连接正常</span>
+                    <span class="time-display" id="current-time">00:00:00</span>
+                </div>
+            </div>
+            
+            <div class="content-area">
+                <!-- 仪表板页面 -->
+                <div class="page active" id="dashboard-page">
+                    <h2>欢迎使用 NeoSystem v3.6</h2>
+                    <p>这是一个带有AI风格定制功能的系统监控终端。</p>
+                    <div style="margin-top: 20px; padding: 20px; background-color: var(--card-bg); border-radius: 10px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">新功能：AI风格定制</h3>
+                        <p>您现在可以完全自定义AI助手的对话风格！</p>
+                        <p>前往"AI风格定制"页面，创建您专属的AI助手。</p>
+                    </div>
+                </div>
+                
+                <!-- AI助手页面 -->
+                <div class="page" id="ai-page">
+                    <div class="ai-assistant-container">
+                        <div class="ai-header">
+                            <div class="ai-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="ai-info">
+                                <div class="ai-name" id="ai-name-display">NeoAI 助手</div>
+                                <div class="ai-status">
+                                    <div class="ai-status-dot"></div>
+                                    <span id="ai-style-display">专业型 - 准备为您提供技术支持</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="ai-chat-container">
+                            <div class="ai-chat-messages" id="ai-chat-messages">
+                                <div class="ai-message assistant">
+                                    <div class="ai-message-header">
+                                        <i class="fas fa-robot"></i>
+                                        <span id="ai-avatar-name">NeoAI 助手</span>
+                                    </div>
+                                    <div class="ai-message-content" id="ai-welcome-message">
+                                        您好！我是NeoAI助手，可以为您提供以下帮助：<br><br>
+                                        1. 解答系统监控相关问题<br>
+                                        2. 提供网络诊断建议<br>
+                                        3. 协助解决系统安全问题<br>
+                                        4. 解释各种技术术语<br>
+                                        5. 提供性能优化建议<br><br>
+                                        <strong>当前风格：专业型</strong><br>
+                                        您可以在"AI风格定制"页面中自定义我的对话风格！<br><br>
+                                        请输入您的问题，或点击下方快速按钮开始对话！
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="ai-chat-input">
+                                <div class="ai-input-group">
+                                    <textarea class="ai-input-field" id="ai-input-field" placeholder="输入您的问题... (按Enter发送，Shift+Enter换行)"></textarea>
+                                    <button class="ai-send-btn" id="ai-send-btn">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="ai-quick-actions" id="ai-quick-actions">
+                                    <div class="ai-quick-btn" data-command="如何优化系统性能？">性能优化</div>
+                                    <div class="ai-quick-btn" data-command="解释CPU使用率高的原因">CPU问题</div>
+                                    <div class="ai-quick-btn" data-command="如何进行网络诊断？">网络诊断</div>
+                                    <div class="ai-quick-btn" data-command="如何提高系统安全性？">安全建议</div>
+                                    <div class="ai-quick-btn" data-command="显示可用命令列表">命令列表</div>
+                                    <div class="ai-quick-btn" data-command="当前系统状态报告">系统报告</div>
+                                </div>
+                                
+                                <div class="command-hint">提示：输入 "help" 查看所有可用命令，或前往"AI风格定制"页面自定义AI助手风格</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI风格定制页面 -->
+                <div class="page" id="style-page">
+                    <div class="style-customization-container">
+                        <div style="margin-bottom: 15px;">
+                            <h2 style="color: var(--primary); margin-bottom: 8px;">AI助手风格定制</h2>
+                            <p style="color: var(--text-secondary);">完全自定义您的AI助手对话风格，创造独一无二的交互体验</p>
+                        </div>
+                        
+                        <!-- 风格预设 -->
+                        <div class="style-section" style="border-bottom: none; padding-bottom: 0; margin-bottom: 15px;">
+                            <h3 class="style-section-title"><i class="fas fa-magic"></i> 快速选择预设风格</h3>
+                            <div class="style-presets" id="style-presets">
+                                <!-- 预设将通过JS动态生成 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 自定义风格设置 -->
+                        <div class="style-customization">
+                            <!-- 设置面板 -->
+                            <div class="style-settings-panel">
+                                <div class="style-section">
+                                    <h3 class="style-section-title"><i class="fas fa-sliders-h"></i> 风格参数设置</h3>
+                                    
+                                    <div class="style-slider-group">
+                                        <div class="style-slider-label">
+                                            <span class="style-slider-name">专业程度</span>
+                                            <span class="style-slider-value" id="professionalism-value">70%</span>
+                                        </div>
+                                        <div class="style-slider-container">
+                                            <input type="range" min="0" max="100" value="70" class="style-slider" id="professionalism-slider">
+                                        </div>
+                                        <div class="param-description">控制回答的专业性和技术深度</div>
+                                    </div>
+                                    
+                                    <div class="style-slider-group">
+                                        <div class="style-slider-label">
+                                            <span class="style-slider-name">友好程度</span>
+                                            <span class="style-slider-value" id="friendliness-value">60%</span>
+                                        </div>
+                                        <div class="style-slider-container">
+                                            <input type="range" min="0" max="100" value="60" class="style-slider" id="friendliness-slider">
+                                        </div>
+                                        <div class="param-description">控制回答的亲和力和鼓励性</div>
+                                    </div>
+                                    
+                                    <div class="style-slider-group">
+                                        <div class="style-slider-label">
+                                            <span class="style-slider-name">幽默程度</span>
+                                            <span class="style-slider-value" id="humor-value">30%</span>
+                                        </div>
+                                        <div class="style-slider-container">
+                                            <input type="range" min="0" max="100" value="30" class="style-slider" id="humor-slider">
+                                        </div>
+                                        <div class="param-description">控制回答的幽默元素和趣味性</div>
+                                    </div>
+                                    
+                                    <div class="style-slider-group">
+                                        <div class="style-slider-label">
+                                            <span class="style-slider-name">简洁程度</span>
+                                            <span class="style-slider-value" id="conciseness-value">50%</span>
+                                        </div>
+                                        <div class="style-slider-container">
+                                            <input type="range" min="0" max="100" value="50" class="style-slider" id="conciseness-slider">
+                                        </div>
+                                        <div class="param-description">控制回答的简洁性和直接性</div>
+                                    </div>
+                                    
+                                    <div class="style-slider-group">
+                                        <div class="style-slider-label">
+                                            <span class="style-slider-name">技术深度</span>
+                                            <span class="style-slider-value" id="technical-depth-value">80%</span>
+                                        </div>
+                                        <div class="style-slider-container">
+                                            <input type="range" min="0" max="100" value="80" class="style-slider" id="technical-depth-slider">
+                                        </div>
+                                        <div class="param-description">控制技术术语和详细解释的使用</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="style-section">
+                                    <h3 class="style-section-title"><i class="fas fa-comment-alt"></i> 对话特性</h3>
+                                    
+                                    <div class="style-checkbox-group">
+                                        <label class="style-checkbox">
+                                            <input type="checkbox" id="use-emojis" checked>
+                                            <span class="checkbox-custom"></span>
+                                            <span class="style-checkbox-label">使用表情符号 😊</span>
+                                        </label>
+                                        
+                                        <label class="style-checkbox">
+                                            <input type="checkbox" id="use-technical-terms" checked>
+                                            <span class="checkbox-custom"></span>
+                                            <span class="style-checkbox-label">使用技术术语</span>
+                                        </label>
+                                        
+                                        <label class="style-checkbox">
+                                            <input type="checkbox" id="use-examples">
+                                            <span class="checkbox-custom"></span>
+                                            <span class="style-checkbox-label">提供具体示例</span>
+                                        </label>
+                                        
+                                        <label class="style-checkbox">
+                                            <input type="checkbox" id="use-analogies" checked>
+                                            <span class="checkbox-custom"></span>
+                                            <span class="style-checkbox-label">使用类比解释</span>
+                                        </label>
+                                        
+                                        <label class="style-checkbox">
+                                            <input type="checkbox" id="ask-questions">
+                                            <span class="checkbox-custom"></span>
+                                            <span class="style-checkbox-label">主动提问澄清</span>
+                                        </label>
+                                        
+                                        <label class="style-checkbox">
+                                            <input type="checkbox" id="give-options" checked>
+                                            <span class="checkbox-custom"></span>
+                                            <span class="style-checkbox-label">提供多个选项</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="style-section">
+                                    <h3 class="style-section-title"><i class="fas fa-user-edit"></i> 个性化设置</h3>
+                                    
+                                    <div class="style-input-group">
+                                        <label class="style-input-label">AI助手名称</label>
+                                        <input type="text" id="ai-custom-name" class="style-input" placeholder="请输入AI助手名称" value="NeoAI 助手">
+                                    </div>
+                                    
+                                    <div class="style-input-group">
+                                        <label class="style-input-label">AI助手称号</label>
+                                        <input type="text" id="ai-custom-title" class="style-input" placeholder="请输入AI助手称号" value="专业型">
+                                    </div>
+                                    
+                                    <div class="style-input-group">
+                                        <label class="style-input-label">自定义欢迎语</label>
+                                        <textarea id="ai-custom-welcome" class="style-textarea" placeholder="请输入自定义欢迎语...">您好！我是NeoAI助手，可以为您提供以下帮助：
+
+1. 解答系统监控相关问题
+2. 提供网络诊断建议
+3. 协助解决系统安全问题
+4. 解释各种技术术语
+5. 提供性能优化建议
+
+当前风格：专业型
+您可以在"AI风格定制"页面中自定义我的对话风格！
+
+请输入您的问题，或点击下方快速按钮开始对话！</textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="style-actions">
+                                    <button class="style-btn style-btn-secondary" id="reset-style-btn">重置为默认</button>
+                                    <button class="style-btn style-btn-primary" id="save-style-btn">保存并应用风格</button>
+                                </div>
+                            </div>
+                            
+                            <!-- 预览面板 -->
+                            <div class="style-preview-panel">
+                                <h3 class="style-preview-title">风格效果预览</h3>
+                                
+                                <div class="style-preview-content" id="style-preview-content">
+                                    <div class="style-preview-ai-name" id="preview-ai-name">NeoAI 助手</div>
+                                    <div class="style-preview-style-name">
+                                        <i class="fas fa-palette"></i>
+                                        <span id="preview-style-name">专业型</span>
+                                    </div>
+                                    
+                                    <div id="preview-welcome-text">
+                                        您好！我是NeoAI助手，可以为您提供以下帮助：
+
+                                        1. 解答系统监控相关问题
+                                        2. 提供网络诊断建议
+                                        3. 协助解决系统安全问题
+                                        4. 解释各种技术术语
+                                        5. 提供性能优化建议
+
+                                        当前风格：专业型
+                                        您可以在"AI风格定制"页面中自定义我的对话风格！
+
+                                        请输入您的问题，或点击下方快速按钮开始对话！
+                                    </div>
+                                    
+                                    <div class="style-preview-example">
+                                        <div class="style-preview-example-title">示例对话</div>
+                                        <div class="style-preview-example-content">
+                                            <strong>用户:</strong> 我的电脑运行很慢，怎么办？<br><br>
+                                            <strong>AI:</strong> <span id="preview-example-response">关于电脑运行缓慢的问题，通常有几个常见原因：
+
+1. 检查CPU和内存使用率，结束高占用进程
+2. 清理磁盘空间，比如删除临时文件
+3. 定期进行系统维护
+
+这些是常见的解决方法，您可以尝试一下。</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 设置页面 -->
+                <div class="page" id="settings-page">
+                    <div class="settings-container" style="display: grid; grid-template-columns: 1fr; gap: 25px;">
+                        <div class="settings-card">
+                            <h3 class="tool-title"><i class="fas fa-cog"></i> 系统设置</h3>
+                            <div class="setting-item">
+                                <span class="setting-label">自动更新</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="auto-update" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <span class="setting-label">实时监控</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="real-time-monitor" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <span class="setting-label">系统通知</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="system-notifications" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <button class="btn" id="apply-settings" style="margin-top: 20px;">应用设置</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 通知 -->
+    <div class="notification" id="notification">
+        <div class="notification-title" id="notification-title">系统通知</div>
+        <div id="notification-message">这是一条系统消息</div>
+    </div>
+
+    <script>
+        // AI风格配置系统
+        const AIStyleSystem = {
+            // 默认风格配置
+            defaultStyle: {
+                name: "专业型",
+                title: "专业型",
+                avatarName: "NeoAI 助手",
+                welcomeMessage: `您好！我是NeoAI助手，可以为您提供以下帮助：<br><br>
+                                1. 解答系统监控相关问题<br>
+                                2. 提供网络诊断建议<br>
+                                3. 协助解决系统安全问题<br>
+                                4. 解释各种技术术语<br>
+                                5. 提供性能优化建议<br><br>
+                                <strong>当前风格：专业型</strong><br>
+                                您可以在"AI风格定制"页面中自定义我的对话风格！<br><br>
+                                请输入您的问题，或点击下方快速按钮开始对话！`,
+                
+                // 风格参数
+                professionalism: 70,
+                friendliness: 60,
+                humor: 30,
+                conciseness: 50,
+                technicalDepth: 80,
+                
+                // 对话特性
+                useEmojis: true,
+                useTechnicalTerms: true,
+                useExamples: false,
+                useAnalogies: true,
+                askQuestions: false,
+                giveOptions: true,
+                
+                // 个性化设置
+                customName: "NeoAI 助手",
+                customTitle: "专业型",
+                customWelcome: `您好！我是NeoAI助手，可以为您提供以下帮助：
+
+1. 解答系统监控相关问题
+2. 提供网络诊断建议
+3. 协助解决系统安全问题
+4. 解释各种技术术语
+5. 提供性能优化建议
+
+当前风格：专业型
+您可以在"AI风格定制"页面中自定义我的对话风格！
+
+请输入您的问题，或点击下方快速按钮开始对话！`,
+                
+                // 风格描述
+                description: "专业、准确、技术导向的AI助手，适合系统管理和技术咨询"
+            },
+            
+            // 当前风格配置
+            currentStyle: null,
+            
+            // 风格预设库
+            stylePresets: [
+                {
+                    id: "professional",
+                    name: "专业型",
+                    icon: "fas fa-user-tie",
+                    description: "专业、准确、技术导向的AI助手，适合系统管理和技术咨询",
+                    style: {
+                        professionalism: 85,
+                        friendliness: 40,
+                        humor: 10,
+                        conciseness: 70,
+                        technicalDepth: 90,
+                        useEmojis: false,
+                        useTechnicalTerms: true,
+                        useExamples: true,
+                        useAnalogies: true,
+                        askQuestions: false,
+                        giveOptions: true,
+                        customName: "NeoAI 专业助手",
+                        customTitle: "专业型",
+                        customWelcome: `您好！我是NeoAI专业助手，专注于系统管理和技术咨询。
+
+我可以为您提供专业的系统监控建议、网络诊断和安全分析。
+我的回答将基于最佳实践和技术标准。
+
+请详细描述您的问题，我将提供精确的技术解决方案。`
+                    }
+                },
+                {
+                    id: "friendly",
+                    name: "友好型",
+                    icon: "fas fa-smile",
+                    description: "友好、耐心、鼓励性的AI助手，适合初学者和非技术用户",
+                    style: {
+                        professionalism: 50,
+                        friendliness: 90,
+                        humor: 40,
+                        conciseness: 30,
+                        technicalDepth: 40,
+                        useEmojis: true,
+                        useTechnicalTerms: false,
+                        useExamples: true,
+                        useAnalogies: true,
+                        askQuestions: true,
+                        giveOptions: true,
+                        customName: "小Neo助手",
+                        customTitle: "友好型",
+                        customWelcome: `嗨！我是小Neo助手 😊
+
+很高兴为您服务！我会用最简单易懂的方式帮助您解决系统问题。
+不用担心技术术语，我会用大白话解释一切！
+
+有什么我可以帮忙的吗？随时问我哦！`
+                    }
+                },
+                {
+                    id: "humorous",
+                    name: "幽默型",
+                    icon: "fas fa-laugh",
+                    description: "幽默、风趣、有趣的AI助手，让技术交流变得轻松愉快",
+                    style: {
+                        professionalism: 40,
+                        friendliness: 80,
+                        humor: 85,
+                        conciseness: 40,
+                        technicalDepth: 50,
+                        useEmojis: true,
+                        useTechnicalTerms: false,
+                        useExamples: true,
+                        useAnalogies: true,
+                        askQuestions: true,
+                        giveOptions: true,
+                        customName: "幽默Neo",
+                        customTitle: "幽默型",
+                        customWelcome: `嘿！我是幽默Neo，您的技术开心果 🤖✨
+
+听说您有系统问题？别担心，我会用最有趣的方式帮您解决！
+保证让技术学习过程不再枯燥~
+
+来吧，告诉我您遇到了什么麻烦？`
+                    }
+                },
+                {
+                    id: "concise",
+                    name: "简洁型",
+                    icon: "fas fa-bolt",
+                    description: "简洁、直接、高效的AI助手，适合追求效率的技术人员",
+                    style: {
+                        professionalism: 70,
+                        friendliness: 30,
+                        humor: 10,
+                        conciseness: 90,
+                        technicalDepth: 75,
+                        useEmojis: false,
+                        useTechnicalTerms: true,
+                        useExamples: false,
+                        useAnalogies: false,
+                        askQuestions: false,
+                        giveOptions: false,
+                        customName: "NeoAI 极速版",
+                        customTitle: "简洁型",
+                        customWelcome: `NeoAI极速版就绪。
+
+直接说明问题，我将提供最简洁的解决方案。
+无冗余，高效率。
+
+请开始。`
+                    }
+                },
+                {
+                    id: "technical",
+                    name: "深度技术型",
+                    icon: "fas fa-code",
+                    description: "深度技术分析，适合高级用户和开发者",
+                    style: {
+                        professionalism: 90,
+                        friendliness: 20,
+                        humor: 5,
+                        conciseness: 60,
+                        technicalDepth: 95,
+                        useEmojis: false,
+                        useTechnicalTerms: true,
+                        useExamples: true,
+                        useAnalogies: false,
+                        askQuestions: false,
+                        giveOptions: true,
+                        customName: "NeoAI 技术专家",
+                        customTitle: "深度技术型",
+                        customWelcome: `NeoAI技术专家系统已启动。
+
+准备提供深度的技术分析和系统优化方案。
+支持高级监控、性能调优和安全加固。
+
+请描述您的技术需求。`
+                    }
+                },
+                {
+                    id: "creative",
+                    name: "创意型",
+                    icon: "fas fa-paint-brush",
+                    description: "创意、发散思维，提供非传统的解决方案",
+                    style: {
+                        professionalism: 50,
+                        friendliness: 70,
+                        humor: 60,
+                        conciseness: 40,
+                        technicalDepth: 60,
+                        useEmojis: true,
+                        useTechnicalTerms: false,
+                        useExamples: true,
+                        useAnalogies: true,
+                        askQuestions: true,
+                        giveOptions: true,
+                        customName: "创意Neo",
+                        customTitle: "创意型",
+                        customWelcome: `嗨！我是创意Neo，您的技术创意伙伴 🎨
+
+我擅长用创新的视角看待系统问题，
+提供与众不同的解决方案和优化思路。
+
+让我们一起来点技术创意吧！`
+                    }
+                }
+            ],
+            
+            // 初始化
+            init: function() {
+                // 加载保存的风格配置
+                this.loadStyle();
+                
+                // 如果当前风格为空，使用默认风格
+                if (!this.currentStyle) {
+                    this.currentStyle = {...this.defaultStyle};
+                    this.saveStyle();
+                }
+                
+                // 应用当前风格到UI
+                this.applyStyleToUI();
+                
+                // 更新侧边栏显示
+                this.updateSidebarDisplay();
+            },
+            
+            // 加载保存的风格配置
+            loadStyle: function() {
+                try {
+                    const savedStyle = localStorage.getItem('neosystem_ai_style');
+                    if (savedStyle) {
+                        this.currentStyle = JSON.parse(savedStyle);
+                    }
+                } catch (e) {
+                    console.error('加载AI风格配置失败:', e);
+                    this.currentStyle = {...this.defaultStyle};
+                }
+            },
+            
+            // 保存风格配置
+            saveStyle: function() {
+                try {
+                    localStorage.setItem('neosystem_ai_style', JSON.stringify(this.currentStyle));
+                    return true;
+                } catch (e) {
+                    console.error('保存AI风格配置失败:', e);
+                    return false;
+                }
+            },
+            
+            // 应用风格到UI
+            applyStyleToUI: function() {
+                if (!this.currentStyle) return;
+                
+                // 更新AI助手页面
+                document.getElementById('ai-name-display').textContent = this.currentStyle.customName;
+                document.getElementById('ai-style-display').textContent = `${this.currentStyle.customTitle} - 准备为您提供技术支持`;
+                document.getElementById('ai-avatar-name').textContent = this.currentStyle.customName;
+                document.getElementById('ai-welcome-message').innerHTML = this.currentStyle.welcomeMessage;
+                document.getElementById('sidebar-status').textContent = this.currentStyle.customTitle;
+                
+                // 更新侧边栏
+                document.getElementById('ai-style-name').textContent = this.currentStyle.name;
+            },
+            
+            // 更新侧边栏显示
+            updateSidebarDisplay: function() {
+                document.getElementById('ai-style-name').textContent = this.currentStyle.name;
+            },
+            
+            // 应用预设风格
+            applyPresetStyle: function(presetId) {
+                const preset = this.stylePresets.find(p => p.id === presetId);
+                if (!preset) return;
+                
+                // 更新当前风格
+                this.currentStyle = {
+                    ...this.defaultStyle,
+                    ...preset.style,
+                    name: preset.name,
+                    title: preset.name,
+                    description: preset.description
+                };
+                
+                // 保存并应用
+                this.saveStyle();
+                this.applyStyleToUI();
+                this.updateStylePreview();
+                
+                // 显示通知
+                showNotification("风格已应用", `已切换到"${preset.name}"风格`, 3000);
+            },
+            
+            // 从UI读取风格设置
+            readStyleFromUI: function() {
+                if (!this.currentStyle) this.currentStyle = {...this.defaultStyle};
+                
+                // 读取滑块值
+                this.currentStyle.professionalism = parseInt(document.getElementById('professionalism-slider').value);
+                this.currentStyle.friendliness = parseInt(document.getElementById('friendliness-slider').value);
+                this.currentStyle.humor = parseInt(document.getElementById('humor-slider').value);
+                this.currentStyle.conciseness = parseInt(document.getElementById('conciseness-slider').value);
+                this.currentStyle.technicalDepth = parseInt(document.getElementById('technical-depth-slider').value);
+                
+                // 读取复选框值
+                this.currentStyle.useEmojis = document.getElementById('use-emojis').checked;
+                this.currentStyle.useTechnicalTerms = document.getElementById('use-technical-terms').checked;
+                this.currentStyle.useExamples = document.getElementById('use-examples').checked;
+                this.currentStyle.useAnalogies = document.getElementById('use-analogies').checked;
+                this.currentStyle.askQuestions = document.getElementById('ask-questions').checked;
+                this.currentStyle.giveOptions = document.getElementById('give-options').checked;
+                
+                // 读取个性化设置
+                this.currentStyle.customName = document.getElementById('ai-custom-name').value || "NeoAI 助手";
+                this.currentStyle.customTitle = document.getElementById('ai-custom-title').value || "自定义";
+                this.currentStyle.customWelcome = document.getElementById('ai-custom-welcome').value;
+                
+                // 更新风格名称（如果没有预设）
+                this.currentStyle.name = "自定义风格";
+                this.currentStyle.description = "用户自定义的AI助手风格";
+                
+                return this.currentStyle;
+            },
+            
+            // 将风格设置应用到UI控件
+            applyStyleToControls: function() {
+                if (!this.currentStyle) return;
+                
+                // 设置滑块值
+                document.getElementById('professionalism-slider').value = this.currentStyle.professionalism;
+                document.getElementById('friendliness-slider').value = this.currentStyle.friendliness;
+                document.getElementById('humor-slider').value = this.currentStyle.humor;
+                document.getElementById('conciseness-slider').value = this.currentStyle.conciseness;
+                document.getElementById('technical-depth-slider').value = this.currentStyle.technicalDepth;
+                
+                // 更新滑块显示值
+                document.getElementById('professionalism-value').textContent = `${this.currentStyle.professionalism}%`;
+                document.getElementById('friendliness-value').textContent = `${this.currentStyle.friendliness}%`;
+                document.getElementById('humor-value').textContent = `${this.currentStyle.humor}%`;
+                document.getElementById('conciseness-value').textContent = `${this.currentStyle.conciseness}%`;
+                document.getElementById('technical-depth-value').textContent = `${this.currentStyle.technicalDepth}%`;
+                
+                // 设置复选框值
+                document.getElementById('use-emojis').checked = this.currentStyle.useEmojis;
+                document.getElementById('use-technical-terms').checked = this.currentStyle.useTechnicalTerms;
+                document.getElementById('use-examples').checked = this.currentStyle.useExamples;
+                document.getElementById('use-analogies').checked = this.currentStyle.useAnalogies;
+                document.getElementById('ask-questions').checked = this.currentStyle.askQuestions;
+                document.getElementById('give-options').checked = this.currentStyle.giveOptions;
+                
+                // 设置个性化设置
+                document.getElementById('ai-custom-name').value = this.currentStyle.customName;
+                document.getElementById('ai-custom-title').value = this.currentStyle.customTitle;
+                document.getElementById('ai-custom-welcome').value = this.currentStyle.customWelcome;
+            },
+            
+            // 重置为默认风格
+            resetToDefault: function() {
+                this.currentStyle = {...this.defaultStyle};
+                this.applyStyleToControls();
+                this.updateStylePreview();
+                showNotification("风格已重置", "已重置为默认风格", 3000);
+            },
+            
+            // 更新风格预览
+            updateStylePreview: function() {
+                // 从UI读取当前设置
+                this.readStyleFromUI();
+                
+                // 更新预览面板
+                document.getElementById('preview-ai-name').textContent = this.currentStyle.customName;
+                document.getElementById('preview-style-name').textContent = this.currentStyle.customTitle;
+                document.getElementById('preview-welcome-text').textContent = this.currentStyle.customWelcome;
+                
+                // 生成示例响应
+                const exampleResponse = this.generateExampleResponse("我的电脑运行很慢，怎么办？");
+                document.getElementById('preview-example-response').textContent = exampleResponse;
+            },
+            
+            // 生成示例回复
+            generateExampleResponse: function(question) {
+                if (!this.currentStyle) return "";
+                
+                const style = this.currentStyle;
+                let response = "";
+                
+                // 根据风格参数调整回复
+                if (style.friendliness > 70) {
+                    response += "您好！";
+                    if (style.useEmojis) response += "😊 ";
+                }
+                
+                if (style.professionalism > 70) {
+                    response += "关于电脑运行缓慢的问题，";
+                } else {
+                    response += "电脑慢这个问题";
+                }
+                
+                if (style.humor > 70) {
+                    response += "就像老爷爷散步一样，确实让人着急呢！";
+                } else {
+                    response += "通常有几个常见原因：";
+                }
+                
+                response += "\n\n";
+                
+                // 根据是否提供选项
+                if (style.giveOptions) {
+                    response += "1. ";
+                    if (style.useTechnicalTerms) {
+                        response += "检查CPU和内存使用率，结束高占用进程";
+                    } else {
+                        response += "检查哪些程序占用资源多，关掉不用的";
+                    }
+                    
+                    response += "\n2. ";
+                    if (style.useExamples) {
+                        response += "清理磁盘空间，比如删除临时文件";
+                    } else {
+                        response += "清理磁盘空间";
+                    }
+                    
+                    response += "\n3. ";
+                    if (style.useAnalogies) {
+                        response += "就像整理房间，定期清理能让电脑更流畅";
+                    } else {
+                        response += "定期进行系统维护";
+                    }
+                } else {
+                    response += "建议先检查任务管理器中的资源使用情况。";
+                }
+                
+                response += "\n\n";
+                
+                if (style.askQuestions) {
+                    response += "您最近安装了新软件吗？或者电脑使用多久了？";
+                } else {
+                    if (style.conciseness > 70) {
+                        response += "建议按上述步骤检查。";
+                    } else {
+                        response += "这些是常见的解决方法，您可以尝试一下。";
+                    }
+                }
+                
+                if (style.friendliness > 70 && style.useEmojis) {
+                    response += " 💪";
+                }
+                
+                return response;
+            },
+            
+            // 根据风格处理AI响应
+            processAIResponse: function(responseText) {
+                if (!this.currentStyle) return responseText;
+                
+                const style = this.currentStyle;
+                let processedResponse = responseText;
+                
+                // 根据简洁程度调整
+                if (style.conciseness > 80) {
+                    // 简化响应：移除多余的空行和冗余词
+                    processedResponse = processedResponse
+                        .replace(/\n\s*\n\s*\n/g, '\n\n') // 减少多余空行
+                        .replace(/非常|十分|特别/g, '') // 移除程度副词
+                        .replace(/\s{2,}/g, ' '); // 合并多余空格
+                } else if (style.conciseness < 30) {
+                    // 增加详细程度：添加解释
+                    processedResponse = this.addDetailToResponse(processedResponse);
+                }
+                
+                // 根据友好程度添加语气词
+                if (style.friendliness > 70) {
+                    const friendlyPrefixes = ["您好！", "嗨！", "嘿！"];
+                    const friendlySuffixes = ["希望这能帮到您！", "如果还有问题，随时问我哦！", "祝您顺利！"];
+                    
+                    if (!processedResponse.startsWith("您好") && !processedResponse.startsWith("嗨") && !processedResponse.startsWith("嘿")) {
+                        processedResponse = friendlyPrefixes[Math.floor(Math.random() * friendlyPrefixes.length)] + " " + processedResponse;
+                    }
+                    
+                    if (Math.random() > 0.5) {
+                        processedResponse += " " + friendlySuffixes[Math.floor(Math.random() * friendlySuffixes.length)];
+                    }
+                }
+                
+                // 根据幽默程度添加幽默元素
+                if (style.humor > 70) {
+                    processedResponse = this.addHumorToResponse(processedResponse);
+                }
+                
+                // 根据是否使用表情符号
+                if (style.useEmojis) {
+                    processedResponse = this.addEmojisToResponse(processedResponse);
+                }
+                
+                return processedResponse;
+            },
+            
+            // 为响应添加细节
+            addDetailToResponse: function(response) {
+                // 这里可以添加更多的细节化逻辑
+                return response;
+            },
+            
+            // 为响应添加幽默元素
+            addHumorToResponse: function(response) {
+                const humorPhrases = [
+                    "（开个玩笑，但问题还是要认真解决的）",
+                    "就像猫追激光笔一样，有时候问题看起来复杂但其实很简单！",
+                    "别担心，这比找到匹配的袜子容易多了！",
+                    "相信我，这比解释量子力学简单多了！"
+                ];
+                
+                // 随机在适当位置插入幽默短语
+                if (Math.random() > 0.7) {
+                    const lines = response.split('\n');
+                    if (lines.length > 2) {
+                        const insertIndex = Math.min(2, lines.length - 1);
+                        lines.splice(insertIndex, 0, humorPhrases[Math.floor(Math.random() * humorPhrases.length)]);
+                        return lines.join('\n');
+                    }
+                }
+                
+                return response;
+            },
+            
+            // 为响应添加表情符号
+            addEmojisToResponse: function(response) {
+                const emojiMap = {
+                    "好": "👍",
+                    "成功": "✅",
+                    "错误": "❌",
+                    "警告": "⚠️",
+                    "注意": "📝",
+                    "重要": "❗",
+                    "帮助": "💡",
+                    "完成": "🎉",
+                    "谢谢": "🙏",
+                    "欢迎": "👋",
+                    "开心": "😊",
+                    "电脑": "💻",
+                    "网络": "🌐",
+                    "安全": "🔒",
+                    "快速": "⚡",
+                    "问题": "❓"
+                };
+                
+                let result = response;
+                for (const [word, emoji] of Object.entries(emojiMap)) {
+                    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                    // 随机决定是否添加表情符号，避免过度使用
+                    if (Math.random() > 0.5) {
+                        result = result.replace(regex, `${word}${emoji}`);
+                    }
+                }
+                
+                return result;
+            },
+            
+            // 获取风格描述
+            getStyleDescription: function() {
+                if (!this.currentStyle) return "";
+                
+                const descriptors = [];
+                const style = this.currentStyle;
+                
+                if (style.professionalism > 70) descriptors.push("专业");
+                if (style.friendliness > 70) descriptors.push("友好");
+                if (style.humor > 70) descriptors.push("幽默");
+                if (style.conciseness > 70) descriptors.push("简洁");
+                if (style.technicalDepth > 70) descriptors.push("技术深入");
+                
+                if (descriptors.length === 0) descriptors.push("平衡");
+                
+                return descriptors.join("、");
+            }
+        };
+        
+        // AI助手核心功能
+        const AIAssistant = {
+            // 获取AI响应
+            getAIResponse: function(userMessage) {
+                // 模拟AI思考时间
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        const message = userMessage.toLowerCase();
+                        let response = "";
+                        
+                        // 根据用户问题生成基本响应
+                        if (message.includes('help') || message.includes('命令') || message.includes('帮助')) {
+                            response = this.getHelpResponse();
+                        } else if (message.includes('性能') || message.includes('优化')) {
+                            response = this.getPerformanceResponse();
+                        } else if (message.includes('cpu') || message.includes('处理器')) {
+                            response = this.getCPUResponse();
+                        } else if (message.includes('内存') || message.includes('ram')) {
+                            response = this.getMemoryResponse();
+                        } else if (message.includes('网络') || message.includes('ping') || message.includes('诊断')) {
+                            response = this.getNetworkResponse();
+                        } else if (message.includes('安全') || message.includes('防火墙') || message.includes('病毒')) {
+                            response = this.getSecurityResponse();
+                        } else if (message.includes('系统') || message.includes('system') || message.includes('报告')) {
+                            response = this.getSystemResponse();
+                        } else if (message.includes('你好') || message.includes('hi') || message.includes('hello')) {
+                            response = this.getGreetingResponse();
+                        } else if (message.includes('时间') || message.includes('date')) {
+                            response = this.getTimeResponse();
+                        } else {
+                            response = this.getDefaultResponse(userMessage);
+                        }
+                        
+                        // 应用风格处理
+                        response = AIStyleSystem.processAIResponse(response);
+                        
+                        resolve(response);
+                    }, 800 + Math.random() * 1000);
+                });
+            },
+            
+            // 预定义回答函数
+            getHelpResponse: function() {
+                return `可用命令列表：\n\n` +
+                       `• help - 显示此帮助信息\n` +
+                       `• system - 显示系统信息\n` +
+                       `• performance - 性能优化建议\n` +
+                       `• network - 网络诊断建议\n` +
+                       `• security - 安全建议\n` +
+                       `• time - 显示当前时间\n` +
+                       `• report - 生成系统状态报告\n\n` +
+                       `您也可以直接询问具体问题，我会尽力为您解答。`;
+            },
+            
+            getPerformanceResponse: function() {
+                return `系统性能优化建议：\n\n` +
+                       `1. 关闭不必要的后台程序\n` +
+                       `2. 使用任务管理器结束高CPU占用进程\n` +
+                       `3. 更新驱动程序\n` +
+                       `4. 清理临时文件\n` +
+                       `5. 增加虚拟内存大小\n` +
+                       `6. 定期重启系统`;
+            },
+            
+            getCPUResponse: function() {
+                const cpuUsage = Math.min(100, Math.max(1, 20 + Math.random() * 40));
+                return `CPU相关信息：\n\n` +
+                       `• 当前使用率: ${cpuUsage.toFixed(1)}%\n` +
+                       `• 核心数量: ${navigator.hardwareConcurrency || 4}\n` +
+                       `• 建议: ${cpuUsage > 80 ? "CPU使用率较高，建议检查后台程序" : "CPU使用率正常，系统运行良好"}`;
+            },
+            
+            getMemoryResponse: function() {
+                const total = 16; // 假设16GB内存
+                const used = (total * (0.3 + Math.random() * 0.4)).toFixed(1);
+                const percent = (used / total * 100).toFixed(1);
+                
+                return `内存使用情况：\n\n` +
+                       `• 总内存: ${total} GB\n` +
+                       `• 已使用: ${used} GB\n` +
+                       `• 可用: ${(total - used).toFixed(1)} GB\n` +
+                       `• 使用率: ${percent}%\n\n` +
+                       `内存优化建议：\n` +
+                       `1. 关闭未使用的应用程序\n` +
+                       `2. 禁用不必要的启动项\n` +
+                       `3. 考虑增加物理内存`;
+            },
+            
+            getNetworkResponse: function() {
+                return `网络诊断建议：\n\n` +
+                       `1. Ping测试：检查到目标主机的连通性\n` +
+                       `2. 路由追踪：查看数据包经过的路由节点\n` +
+                       `3. 端口扫描：检查目标主机的开放端口\n` +
+                       `4. 网速测试：测量网络上传下载速度\n\n` +
+                       `常见问题解决：\n` +
+                       `• 如果Ping失败，检查网络连接\n` +
+                       `• 如果网速慢，尝试重启路由器\n` +
+                       `• 如果端口不通，检查防火墙设置`;
+            },
+            
+            getSecurityResponse: function() {
+                return `系统安全建议：\n\n` +
+                       `1. 确保防火墙已启用并配置正确规则\n` +
+                       `2. 安装并更新防病毒软件\n` +
+                       `3. 及时安装系统安全更新\n` +
+                       `4. 使用强密码并定期更换\n` +
+                       `5. 限制用户权限，遵循最小权限原则\n` +
+                       `6. 定期备份重要数据`;
+            },
+            
+            getSystemResponse: function() {
+                const now = new Date();
+                return `系统状态报告：\n\n` +
+                       `📊 资源使用情况：\n` +
+                       `• CPU使用率: ${(20 + Math.random() * 40).toFixed(1)}%\n` +
+                       `• 内存使用: ${(8 + Math.random() * 4).toFixed(1)} GB / 16 GB\n` +
+                       `• 系统时间: ${now.toLocaleTimeString()}\n` +
+                       `• 在线时间: ${document.getElementById('uptime').textContent}\n\n` +
+                       `✅ 系统状态: 正常`;
+            },
+            
+            getGreetingResponse: function() {
+                const greetings = [
+                    "您好！我是" + (AIStyleSystem.currentStyle ? AIStyleSystem.currentStyle.customName : "NeoAI助手") + "，有什么可以帮您的吗？",
+                    "嗨！准备好为您提供技术支持了！",
+                    "欢迎使用NeoSystem！我是您的AI助手。",
+                    "您好！需要关于系统监控的帮助吗？"
+                ];
+                return greetings[Math.floor(Math.random() * greetings.length)];
+            },
+            
+            getTimeResponse: function() {
+                const now = new Date();
+                return `当前系统时间：\n\n` +
+                       `• 日期: ${now.toLocaleDateString()}\n` +
+                       `• 时间: ${now.toLocaleTimeString()}\n` +
+                       `• 时区: ${Intl.DateTimeFormat().resolvedOptions().timeZone}\n` +
+                       `• UTC时间: ${now.toUTCString()}`;
+            },
+            
+            getDefaultResponse: function(userMessage) {
+                const responses = [
+                    `我理解了您的问题："${userMessage}"，关于这个问题，我可以为您提供一些系统监控和优化的建议。`,
+                    `关于"${userMessage}"，这涉及到系统管理的多个方面。您能提供更多具体信息吗？`,
+                    `感谢您的提问！对于"${userMessage}"，建议您检查系统日志或使用相应的诊断工具进行进一步分析。`,
+                    `这个问题比较具体，我可以从系统监控的角度为您提供一些分析思路。`
+                ];
+                return responses[Math.floor(Math.random() * responses.length)];
+            }
+        };
+        
+        // 系统功能
+        let systemUptime = 0;
+        let updateTimer;
+        
+        // 更新系统信息
+        function updateSystemInfo() {
+            // 更新在线时间
+            systemUptime += 1;
+            const hours = Math.floor(systemUptime / 3600);
+            const minutes = Math.floor((systemUptime % 3600) / 60);
+            const seconds = Math.floor(systemUptime % 60);
+            document.getElementById('uptime').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        // 更新当前时间
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], {hour12: false});
+            document.getElementById('current-time').textContent = timeString;
+        }
+        
+        // 显示通知
+        function showNotification(title, message, duration = 5000) {
+            const notification = document.getElementById('notification');
+            const notificationTitle = document.getElementById('notification-title');
+            const notificationMessage = document.getElementById('notification-message');
+            
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+        
+        // 初始化AI聊天功能
+        function initAIChat() {
+            const aiInputField = document.getElementById('ai-input-field');
+            const aiSendBtn = document.getElementById('ai-send-btn');
+            const aiChatMessages = document.getElementById('ai-chat-messages');
+            const aiQuickActions = document.getElementById('ai-quick-actions');
+            
+            // 发送消息
+            function sendMessage() {
+                const message = aiInputField.value.trim();
+                if (!message) return;
+                
+                // 添加用户消息
+                addMessage('user', message);
+                
+                // 清空输入框
+                aiInputField.value = '';
+                
+                // 显示AI正在输入
+                showTypingIndicator();
+                
+                // 获取AI响应
+                setTimeout(() => {
+                    // 移除正在输入指示器
+                    removeTypingIndicator();
+                    
+                    // 获取AI响应
+                    AIAssistant.getAIResponse(message).then(aiResponse => {
+                        // 添加AI响应
+                        addMessage('assistant', aiResponse);
+                    }).catch(error => {
+                        // 添加错误消息
+                        addMessage('assistant', `抱歉，处理您的请求时出现错误：\n\n${error.message}`);
+                    });
+                }, 1000);
+            }
+            
+            // 添加消息到聊天
+            function addMessage(sender, content) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `ai-message ${sender}`;
+                
+                const senderName = sender === 'user' ? '用户' : (AIStyleSystem.currentStyle ? AIStyleSystem.currentStyle.customName : 'NeoAI 助手');
+                const senderIcon = sender === 'user' ? 'fas fa-user' : 'fas fa-robot';
+                
+                messageDiv.innerHTML = `
+                    <div class="ai-message-header">
+                        <i class="${senderIcon}"></i>
+                        <span>${senderName}</span>
+                    </div>
+                    <div class="ai-message-content">${content}</div>
+                `;
+                
+                aiChatMessages.appendChild(messageDiv);
+                
+                // 滚动到底部
+                aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+            }
+            
+            // 显示正在输入指示器
+            function showTypingIndicator() {
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'typing-indicator';
+                typingDiv.id = 'typing-indicator';
+                
+                typingDiv.innerHTML = `
+                    <span>AI助手正在输入...</span>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                `;
+                
+                aiChatMessages.appendChild(typingDiv);
+                aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+            }
+            
+            // 移除正在输入指示器
+            function removeTypingIndicator() {
+                const typingIndicator = document.getElementById('typing-indicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+            }
+            
+            // 发送按钮点击事件
+            aiSendBtn.addEventListener('click', sendMessage);
+            
+            // 输入框回车事件
+            aiInputField.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // 快速操作按钮
+            aiQuickActions.querySelectorAll('.ai-quick-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const command = this.getAttribute('data-command');
+                    aiInputField.value = command;
+                    sendMessage();
+                });
+            });
+        }
+        
+        // 初始化风格定制页面
+        function initStyleCustomization() {
+            // 渲染风格预设
+            renderStylePresets();
+            
+            // 初始化滑块事件
+            initStyleSliders();
+            
+            // 初始化按钮事件
+            initStyleButtons();
+            
+            // 更新风格预览
+            AIStyleSystem.updateStylePreview();
+        }
+        
+        // 渲染风格预设
+        function renderStylePresets() {
+            const presetsContainer = document.getElementById('style-presets');
+            presetsContainer.innerHTML = '';
+            
+            AIStyleSystem.stylePresets.forEach(preset => {
+                const presetElement = document.createElement('div');
+                presetElement.className = 'style-preset';
+                presetElement.setAttribute('data-preset-id', preset.id);
+                
+                // 检查是否是当前风格
+                if (AIStyleSystem.currentStyle && AIStyleSystem.currentStyle.name === preset.name) {
+                    presetElement.classList.add('active');
+                }
+                
+                presetElement.innerHTML = `
+                    <div class="style-preset-icon">
+                        <i class="${preset.icon}"></i>
+                    </div>
+                    <div class="style-preset-title">${preset.name}</div>
+                    <div class="style-preset-desc">${preset.description}</div>
+                `;
+                
+                presetElement.addEventListener('click', function() {
+                    const presetId = this.getAttribute('data-preset-id');
+                    
+                    // 更新活动状态
+                    document.querySelectorAll('.style-preset').forEach(p => p.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 应用预设风格
+                    AIStyleSystem.applyPresetStyle(presetId);
+                    
+                    // 更新UI控件
+                    AIStyleSystem.applyStyleToControls();
+                });
+                
+                presetsContainer.appendChild(presetElement);
+            });
+        }
+        
+        // 初始化风格滑块
+        function initStyleSliders() {
+            const sliders = [
+                'professionalism-slider',
+                'friendliness-slider', 
+                'humor-slider',
+                'conciseness-slider',
+                'technical-depth-slider'
+            ];
+            
+            sliders.forEach(sliderId => {
+                const slider = document.getElementById(sliderId);
+                const valueDisplay = document.getElementById(sliderId.replace('-slider', '-value'));
+                
+                // 初始化显示值
+                valueDisplay.textContent = `${slider.value}%`;
+                
+                // 更新显示值
+                slider.addEventListener('input', function() {
+                    valueDisplay.textContent = `${this.value}%`;
+                    AIStyleSystem.updateStylePreview();
+                });
+            });
+        }
+        
+        // 初始化风格按钮
+        function initStyleButtons() {
+            // 保存风格按钮
+            document.getElementById('save-style-btn').addEventListener('click', function() {
+                // 从UI读取风格设置
+                AIStyleSystem.readStyleFromUI();
+                
+                // 保存风格
+                if (AIStyleSystem.saveStyle()) {
+                    // 应用风格到UI
+                    AIStyleSystem.applyStyleToUI();
+                    
+                    // 更新风格预览
+                    AIStyleSystem.updateStylePreview();
+                    
+                    // 更新预设显示
+                    renderStylePresets();
+                    
+                    showNotification("风格已保存", "AI助手风格已成功保存并应用", 3000);
+                } else {
+                    showNotification("保存失败", "保存风格时出现错误，请重试", 3000);
+                }
+            });
+            
+            // 重置风格按钮
+            document.getElementById('reset-style-btn').addEventListener('click', function() {
+                if (confirm("确定要重置为默认风格吗？所有自定义设置都将丢失。")) {
+                    AIStyleSystem.resetToDefault();
+                    renderStylePresets();
+                }
+            });
+            
+            // 输入框变化时更新预览
+            const styleInputs = [
+                'ai-custom-name',
+                'ai-custom-title', 
+                'ai-custom-welcome'
+            ];
+            
+            styleInputs.forEach(inputId => {
+                document.getElementById(inputId).addEventListener('input', function() {
+                    AIStyleSystem.updateStylePreview();
+                });
+            });
+            
+            // 复选框变化时更新预览
+            const styleCheckboxes = [
+                'use-emojis',
+                'use-technical-terms',
+                'use-examples',
+                'use-analogies',
+                'ask-questions',
+                'give-options'
+            ];
+            
+            styleCheckboxes.forEach(checkboxId => {
+                document.getElementById(checkboxId).addEventListener('change', function() {
+                    AIStyleSystem.updateStylePreview();
+                });
+            });
+        }
+        
+        // 页面导航功能
+        function initPageNavigation() {
+            const navItems = document.querySelectorAll('.nav-item');
+            
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const pageId = this.getAttribute('data-page');
+                    
+                    // 更新活动状态
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 切换页面
+                    switchPage(pageId);
+                });
+            });
+        }
+        
+        // 切换页面
+        function switchPage(pageId) {
+            // 隐藏所有页面
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // 显示目标页面
+            const targetPage = document.getElementById(`${pageId}-page`);
+            if (targetPage) {
+                targetPage.classList.add('active');
+                
+                // 更新页面标题
+                const pageTitles = {
+                    'dashboard': '系统仪表板',
+                    'ai': 'AI助手',
+                    'style': 'AI风格定制',
+                    'settings': '系统设置'
+                };
+                
+                document.getElementById('current-page-title').textContent = pageTitles[pageId] || '未知页面';
+                
+                // 如果是风格定制页面，确保UI控件更新
+                if (pageId === 'style') {
+                    // 确保UI控件与当前风格同步
+                    setTimeout(() => {
+                        AIStyleSystem.applyStyleToControls();
+                        AIStyleSystem.updateStylePreview();
+                    }, 100);
+                }
+                
+                // 如果是AI助手页面，滚动到底部
+                if (pageId === 'ai') {
+                    setTimeout(() => {
+                        const chatMessages = document.getElementById('ai-chat-messages');
+                        if (chatMessages) {
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        }
+                    }, 100);
+                }
+            }
+        }
+        
+        // 初始化设置功能
+        function initSettings() {
+            document.getElementById('apply-settings').addEventListener('click', function() {
+                showNotification("设置已应用", "系统设置已更新", 3000);
+            });
+        }
+        
+        // 开始系统监控
+        function startSystemMonitoring() {
+            // 初始更新
+            updateSystemInfo();
+            updateCurrentTime();
+            
+            // 设置定时器
+            updateTimer = setInterval(() => {
+                updateSystemInfo();
+                updateCurrentTime();
+            }, 1000);
+        }
+        
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化AI风格系统
+            AIStyleSystem.init();
+            
+            // 初始化页面导航
+            initPageNavigation();
+            
+            // 初始化AI聊天
+            initAIChat();
+            
+            // 初始化风格定制
+            initStyleCustomization();
+            
+            // 初始化设置
+            initSettings();
+            
+            // 开始系统监控
+            startSystemMonitoring();
+            
+            // 显示欢迎通知
+            setTimeout(() => {
+                showNotification("系统启动完成", "NeoSystem AI风格定制版 v3.6 已就绪", 6000);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
